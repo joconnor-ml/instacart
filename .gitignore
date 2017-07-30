@@ -1,0 +1,11 @@
+.env/
+models/
+data/
+submissions/
+notebooks/.ipynb_checkpoints/
+*~
+*#
+*.csv
+*.pkl
+*.gz
+*.pyc
