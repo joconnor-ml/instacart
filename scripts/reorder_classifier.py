@@ -56,6 +56,16 @@ def train_reorder_models():
             pkl.dump(model.fit(X, y["reordered"]), f)
 
             
+def predict_reorder_models():
+    X = generate_reorder_features("train")
+    preds = {}
+    for name, model in models.items():
+        with open("../models/reorder_model_{}.pkl".format(name), "rb") as f:
+            model = pkl.load(f)
+            preds[name] = model.predict_proba(X)[:, 1]
+    return pd.DataFrame(preds, index=X.index)
+
+            
 def validate_reorder_models():
     print("Generating reorder_model features")
     X = generate_reorder_features("train").iloc[::4]
@@ -95,8 +105,9 @@ def validate_reorder_models():
                                        method="predict_proba")[:, 1])
         names.append(name)
 
-    preds = pd.DataFrame(np.array(preds).T, columns=names)
+    preds = pd.DataFrame(np.array(preds).T, columns=names, index=X.index)
     preds["mean"] = preds.mean(axis=1)
+    preds.to_csv("reorder_preds_train.csv")
     def lloss(x):return log_loss(y["reordered"], x)
     def auc(x):return roc_auc_score(y["reordered"], x)
     print(preds.agg([lloss, auc]))
@@ -104,5 +115,7 @@ def validate_reorder_models():
 
 
 if __name__ == "__main__":
-    # train_reorder_models()
+    train_reorder_models()
     validate_reorder_models()
+    preds = predict_none_models()
+    preds.to_csv("../data/reorder_preds_test.csv")
