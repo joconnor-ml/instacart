@@ -25,6 +25,7 @@ def train_none_models():
         with open("../models/none_model_{}.pkl".format(name), "wb") as f:
             pkl.dump(model.fit(X, y), f)
 
+            
 def predict_none_models():
     X = generate_none_features("test")
     preds = {}
@@ -50,15 +51,16 @@ def validate_none_models():
                                        method="predict_proba")[:, 1])
         names.append(name)
 
-    preds = pd.DataFrame(np.array(preds).T, columns=names)
+    preds = pd.DataFrame(np.array(preds).T, columns=names, index=X.index)
     preds["mean"] = preds.mean(axis=1)
+    preds.to_csv("../data/none_preds_train.csv")
     def log_loss(x):return log_loss(y, x),
     def roc_auc(x):return roc_auc_score(y, x),
     print(preds.agg([log_loss, roc_auc]))
 
-
+    
 if __name__ == "__main__":
-    #validate_none_models()
+    validate_none_models()
     train_none_models()
     preds = predict_none_models()
-    preds.to_csv("../data/none_preds.csv")
+    preds.to_csv("../data/none_preds_test.csv")
