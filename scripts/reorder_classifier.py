@@ -13,7 +13,7 @@ from data_utils import *
 
 models = {
     "linear": make_pipeline(StandardScaler(), LogisticRegression()),
-    "xgb": XGBClassifier(n_estimators=256, learning_rate=0.01, max_depth=2)
+    "xgb": XGBClassifier(n_estimators=16, learning_rate=0.2, max_depth=2)
 }
 
 
@@ -68,7 +68,7 @@ def predict_reorder_models():
             
 def validate_reorder_models():
     print("Generating reorder_model features")
-    X = generate_reorder_features("train").iloc[::4]
+    X = generate_reorder_features("train")
     user_df = generate_user_features("train")
     
     # merge into feature dataframe
@@ -83,7 +83,7 @@ def validate_reorder_models():
     X["monthly"] = X["days_since_prior_order"] == 30
     try:
         y = pd.read_csv("../data/reorder_targets.csv", index_col=0,
-                        dtype=np.int32).iloc[::4]
+                        dtype=np.int32)
     except Exception as e:
         y = generate_reorder_targets()
         print(y.head())
