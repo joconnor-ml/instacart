@@ -159,7 +159,6 @@ def generate_reorder_features(eval_set):
                                          "product_count",
                                          "in_last_order1", "in_last_order2",
                                          "in_last_order3", "total_orders"])
-        df["order_frac"] = df["product_count"] / df["total_orders"]
         df = pd.merge(df, test.drop(["eval_set"], axis=1), on="user_id")
         df = pd.merge(df, pd.read_csv("../data/products.csv", index_col=0,
                                       usecols=["product_id", "aisle_id",
@@ -167,10 +166,13 @@ def generate_reorder_features(eval_set):
                       how="left", left_on="product_id", right_index=True)
         df.to_csv("../data/reorder_features_{}.csv".format(eval_set))
     
+    df["order_frac"] = df["product_count"] / df["total_orders"]
     return df
 
 def generate_reorder_targets():
-    return pd.read_csv('../data/order_products__train.csv', dtype=np.int32, index_col=0).groupby("order_id")["product_id"].apply(list)
+    x = pd.read_csv('../data/order_products__train.csv', dtype=np.int32)
+    return x[x["reordered"]==True]#x.groupby("order_id")["product_id"].apply(list)
+
 
 def generate_none_features(eval_set):
     try:

@@ -13,7 +13,7 @@ from data_utils import *
 
 models = {
     "linear": make_pipeline(StandardScaler(), LogisticRegression()),
-    "xgb": XGBClassifier(n_estimators=16, learning_rate=0.5, max_depth=5)
+    "xgb": XGBClassifier(n_estimators=256, learning_rate=0.01, max_depth=2)
 }
 
 
@@ -36,44 +36,73 @@ def f1_score(y_true, y_pred):
 
 def train_reorder_models():
     X = generate_reorder_features("train")
-    print(X.head())
-    targets = generate_reorder_targets()
-    print(targets.head())
-    y = []
-    for i, row in X.iterrows():
-        y.append(row["product_id"] in targets["order_id"])
+    try:
+        y = pd.read_csv("../data/reorder_targets.csv", index_col=0,
+                        dtype=np.int32)
+    except Exception as e:
+        y = generate_reorder_targets()
+        print(y.head())
+        y = pd.merge(X[["order_id", "product_id"]],
+                     y[["order_id", "product_id", "reordered"]],
+                     left_on=["order_id", "product_id"],
+                     right_on=["order_id", "product_id"],
+                     how="left").fillna(0)
+        print(y.head())
+        print(y.shape, y.sum())
+        y.to_csv("../data/reorder_targets.csv")
 
     for name, model in models.items():
         with open("../models/reorder_model_{}.pkl".format(name), "wb") as f:
-            pkl.dump(model.fit(X, y), f)
+            pkl.dump(model.fit(X, y["reordered"]), f)
 
             
 def validate_reorder_models():
     print("Generating reorder_model features")
-    X = generate_reorder_features("train")
-    print("Generating reorder_model targets")
-    targets = generate_reorder_targets()
-    y = []
-    for i, row in X.iterrows():
-        y.append(row["product_id"] in truth[row["order_id"]])
+    X = generate_reorder_features("train").iloc[::4]
+    user_df = generate_user_features("train")
+    
+    # merge into feature dataframe
+    X = pd.merge(X, user_df, left_on="user_id", right_index=True)    
+    X["ratio"] = X["n_unique"] / X["n_total"]
+    X["ratio2"] =  X["n_total"] / X["order_number"]
+    X["day_chunk"] = X["order_hour_of_day"] // 8
+    X["weekend"] = X["order_dow"] > 4
+    X["weekly"] = (X["days_since_prior_order"] % 7) == 0
+    X["same_day"] = X["days_since_prior_order"] == 0
+    X["next_day"] = X["days_since_prior_order"] == 1
+    X["monthly"] = X["days_since_prior_order"] == 30
+    try:
+        y = pd.read_csv("../data/reorder_targets.csv", index_col=0,
+                        dtype=np.int32).iloc[::4]
+    except Exception as e:
+        y = generate_reorder_targets()
+        print(y.head())
+        y = pd.merge(X[["order_id", "product_id"]],
+                     y[["order_id", "product_id", "reordered"]],
+                     left_on=["order_id", "product_id"],
+                     right_on=["order_id", "product_id"],
+                     how="left").fillna(0)
+        print(y.head())
+        print(y.shape, y.sum())
+        y.to_csv("../data/reorder_targets.csv")
 
     preds = []
     names = []
     print("Modelling")
     for name, model in models.items():
         preds.append(cross_val_predict(model,
-                                       X, y,
+                                       X, y["reordered"],
                                        method="predict_proba")[:, 1])
         names.append(name)
 
     preds = pd.DataFrame(np.array(preds).T, columns=names)
     preds["mean"] = preds.mean(axis=1)
-    def log_loss(x):return log_loss(y, x),
-    def roc_auc(x):return roc_auc_score(y, x),
-    print(preds.agg([log_loss, roc_auc]))
+    def lloss(x):return log_loss(y["reordered"], x)
+    def auc(x):return roc_auc_score(y["reordered"], x)
+    print(preds.agg([lloss, auc]))
 
 
 
 if __name__ == "__main__":
-    train_reorder_models()
+    # train_reorder_models()
     validate_reorder_models()
