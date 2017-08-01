@@ -117,5 +117,5 @@ def validate_reorder_models():
 if __name__ == "__main__":
     train_reorder_models()
     validate_reorder_models()
-    preds = predict_none_models()
+    preds = predict_reorder_models()
     preds.to_csv("../data/reorder_preds_test.csv")
