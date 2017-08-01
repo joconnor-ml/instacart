@@ -107,10 +107,10 @@ def validate_reorder_models():
 
     preds = pd.DataFrame(np.array(preds).T, columns=names, index=X.index)
     preds["mean"] = preds.mean(axis=1)
-    preds.to_csv("reorder_preds_train.csv")
-    def lloss(x):return log_loss(y["reordered"], x)
+    preds.to_csv("../data/reorder_preds_train.csv")
+    def ll(x):return log_loss(y["reordered"], x)
     def auc(x):return roc_auc_score(y["reordered"], x)
-    print(preds.agg([lloss, auc]))
+    print(preds.agg([ll, auc]))
 
 
 

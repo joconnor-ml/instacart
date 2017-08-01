@@ -54,9 +54,9 @@ def validate_none_models():
     preds = pd.DataFrame(np.array(preds).T, columns=names, index=X.index)
     preds["mean"] = preds.mean(axis=1)
     preds.to_csv("../data/none_preds_train.csv")
-    def log_loss(x):return log_loss(y, x),
-    def roc_auc(x):return roc_auc_score(y, x),
-    print(preds.agg([log_loss, roc_auc]))
+    def ll(x):return log_loss(y, x)
+    def auc(x):return roc_auc_score(y, x)
+    print(preds.agg([ll, auc]))
 
     
 if __name__ == "__main__":
