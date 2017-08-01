@@ -57,7 +57,7 @@ def train_reorder_models():
 
             
 def predict_reorder_models():
-    X = generate_reorder_features("train")
+    X = generate_reorder_features("test")
     preds = {}
     for name, model in models.items():
         with open("../models/reorder_model_{}.pkl".format(name), "rb") as f:
